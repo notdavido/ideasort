@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Organize your quotes in one place.">
+    <title>Landing Page</title>
+    <link rel="icon" type="image/x-icon" href="/images/x.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/appletouchicon.png">
+    <link rel="stylesheet" href="decorations.css">
+    
+    
+    <!-- Google tag (gtag.js) -->
+    <!-- <script async src="https://www.googletagmanager.com/gtag/js?id=G-CSGL4J6KZE"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-CSGL4J6KZE');
+    </script>
+     -->
+    <!-- Firebase JavaScript SDK -->
+    
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="styles.css">
+
+    <script type="module" src="https://www.gstatic.com/firebasejs/9.6.11/firebase-database.js"></script>
+    
+    
+</head>
+<body>
+<div class="topframe">
+  <div class="navbar">
+    <a class="topbutton" href="index.html">Home</a>
+    <a class="topbutton" href="landingpage.html">Select</a>
+    <a class="topbutton" href="about.html">About</a>
+    <!-- Add more links as needed -->
+  </div>
+  <aside class="loginpart">
+    <a id="loginpageredirect"class="topbutton" href="login.html">Login</a>
+    <a id="signuppageredirect" class="topbutton" href="signup.html">Sign Up</a>
+
+  </aside>
+  
+</div>
+<div class="hiddenundernavbar">
+    Why hello there ಠ_ಠ
+</div>
+
+<div class="hero">
+  <h1>site</h1>
+</div>
+    
+    
+<h3 class="centered"id="myButton">Select which set to edit from.</h3>
+
+  <script>
+    const button = document.getElementById("myButton");
+    const paragraph = document.getElementById("myParagraph");
+
+    button.addEventListener("click", () => {
+      button.remove();
+    });
+  </script>    
+    
+    
+<!-- Featured Topics/Games Section -->
+<section class="featured-topics">
+  <button id="simplesetcreate" class="simplesetcreate">Create Set</button>
+  <h2>Your stacks:</h2>
+  <div class="topics-container" id="topics-container">
+      
+          
+      
+  <div class="topic" id="tobedetermined">
+    <!-- <a href="sections/code.html"> -->
+    <h3>[placeholder]</h3>
+    <!-- <img src="../images/rolimonsapi.png" alt="[Image of python program gathering data from rolimons then using that data to find sellers on roblox api]" class="fullsizeimage">
+    <p>Learn more about some of my experience in the field.</p> -->
+    </a>
+  </div>
+
+      
+  </div>
+</section>
+
+
+
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module" src="main.js"></script>
+</body>
+</body>
+   <div class="footer">
+      <p>Irmonus © 2024</p>
+   </div>
+
+
+
+  
+</html>
