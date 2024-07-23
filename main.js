@@ -3,6 +3,7 @@ import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.11.0/firebas
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-analytics.js";
 import { getDatabase, ref, set, push, update, get } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+
 const firebaseConfig = {
     apiKey: "AIzaSyBfLy16MYJdhVDMBEsLI-OpvvzE_-Pp1WM",
     authDomain: "websitequoteproj.firebaseapp.com",
@@ -24,9 +25,116 @@ const db = getDatabase();
 const auth = getAuth();
 
 
+function validateemail(email) {
+    if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email))
+     {
+       return true
+     }
+       alert("You have entered an invalid email address!")
+       return false
+   }
+   
+   function validatepassword(password) {
+    if (password < 6) {
+      return false
+    } else {
+      return true
+    }
+  }
+  
 
-
-
+function register(event){
+    event.preventDefault();
+    const email = document.getElementById('email').value
+    const password = document.getElementById('emailpassword').value
+  
+    if (validateemail(email) == false || validatepassword(password) == false) {
+      return
+    }
+    createUserWithEmailAndPassword(auth,email,password)
+    
+    .then(function() {
+      
+      var user = auth.currentUser
+      // console.log("User:", user); // Check if user object is retrieved correctly
+  
+      
+      // var database_ref = db.ref();
+      
+      console.log("here")
+      var user_data = {
+        email : email,
+        last_login : Date.now()
+      }
+  
+      set(ref(db, 'users/' + user.uid), user_data)
+        .then(() => {
+            console.log("User added to database");
+            window.location.href = 'landingpage.html';
+            // Optionally reset the form here
+        })
+        .catch((error) => {
+          var error_code = error.code
+          var error_message = error.message
+          //console.error("Error:", error_code, error_message)
+         
+          
+        });
+      // database_ref.child('users/' + user.uid).set()
+  
+    })
+    .catch((error) => {
+      var error_code = error.code
+      var error_message = error.message
+      console.log(error_code)
+      if (error_code === 'auth/email-already-in-use') {
+        // Handle email already in use error here
+        alert("account already exists")
+        // Display appropriate message to the user
+      }
+    });
+  }
+  
+  function login() {
+    event.preventDefault();
+    //get input fields
+  
+    
+  
+    const email = document.getElementById('email').value
+    const password = document.getElementById('emailpassword').value
+    //validate
+    if (validateemail(email) == false || validatepassword(password) == false) {
+      return
+    }
+  
+    console.log("here")
+      var user_data = {
+        last_login : Date.now()
+      }
+      signInWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      const user = userCredential.user;
+      console.log("User logged in:", user);
+      window.location.href = 'landingpage.html';
+      // Update user data
+      update(ref(db, 'users/' + user.uid), user_data)
+        .then(() => {
+          console.log("User data updated successfully");
+          // Optionally reset the form here
+        })
+        .catch((error) => {
+          console.error("Error updating user data:", error);
+        });
+    })
+    .catch((error) => {
+      // Handle sign-in errors
+      const errorCode = error.code;
+      const errorMessage = error.message;
+      console.error("Sign-in error:", errorCode, errorMessage);
+    });
+  }
+  
 
 
 function setCookie(cookieName, cookieValue) {
