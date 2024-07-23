@@ -377,20 +377,23 @@ document.addEventListener("DOMContentLoaded", function() {
         
                 const db = getDatabase();
                 console.log(child.parent.instanceDataRef)
+
+                
                 const childPath = this.instanceDataRef + "/" + child.id;
                 console.log("Attempting to set child reference at path:", childPath);
-
+                
                 const childRef = ref(db, childPath);
         
-                set(childRef, 'data')
+                set(childRef, 'node')
                     .then(() => {
-                        child.instanceDataRef = childRef;
+                        child.instanceDataRef = childPath;
                         console.log("Child instance data reference set successfully.");
                     })
                     .catch((error) => {
                         console.error("Error setting child instance data reference:", error);
                     });
-        
+                
+                
                 return child;
             }
             loadChild(text){
@@ -534,25 +537,46 @@ document.addEventListener("DOMContentLoaded", function() {
                 if (snapshot.exists()) {
                     if (snapshot.hasChildren()) {
                         // Assuming there is only one child, get the first child key
-                        const firstChildKey = snapshot.val()[Object.keys(snapshot.val())[0]];
+                        const firstChildKey = Object.keys(snapshot.val())[0];
                         console.log(firstChildKey)
-                        const childRef = ref(db, pathToProject + "/" + firstChildKey);
+                        const childRef = ref(db, `${pathToProject}/${firstChildKey}`);
                         console.log("Project '" + projectname + "' has children. Setting root.dataRef to the first child.");
-                        root.instanceDataRef = (pathToProject + "/" + firstChildKey);
-                        // console.log(childDataRef)
+
+                        root.instanceDataRef = (pathToProject+ "/" + firstChildKey)
+                        return childRef;
                     } else {
+                        let newID = generateUniqueId();
                         console.log("Project '" + projectname + "' exists but has no children.");
-                        childDataRef = ref(db, pathToProject + "/temporary");
-                        set(childDataRef, 'data').then(() => {
-                            root.instanceDataRef = (pathToProject + '/temporary');
+                        
+                        const newChildPath = pathToProject + "/" + newID;
+                        const newChildRef = ref(db, newChildPath);
+                        
+                        set(newChildRef, 'node').then(() => {
+                            root.id = newID;
+                            root.instanceDataRef = newChildPath;
                             console.log("Temporary child created and root.dataRef set to it.");
+                        }).catch((error) => {
+                            console.error("Error setting new child:", error);
                         });
                     }
                 } else {
                     // Project doesn't exist, proceed to set the value
+                    let newID = generateUniqueId();
                     return set(projectRef, 1).then(() => {
                         console.log("Project '" + projectname + "' created.");
-                        root.instanceDataRef = projectRef; //this is wrong but we will proceed (do i even come back to these issues?)
+                        
+                        const newChildPath = pathToProject + "/" + newID;
+                        const newChildRef = ref(db, newChildPath);
+                        
+                        return set(newChildRef, 'node').then(() => {
+                            root.id = newID;
+                            root.instanceDataRef = newChildPath;
+                            console.log("Temporary child created and root.dataRef set to it.");
+                        }).catch((error) => {
+                            console.error("Error setting new child:", error);
+                        });
+                    }).catch((error) => {
+                        console.error("Error creating project:", error);
                     });
                 }
             })
@@ -564,6 +588,7 @@ document.addEventListener("DOMContentLoaded", function() {
         // root.instanceDataRef = childDataRef
         root.parentbox = mainbox;
         root.siblingcontainer = mainsiblingcontainer;
+        
 
         // root.createChild('1')
         root.createBoxElement()
