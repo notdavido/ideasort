@@ -366,6 +366,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 
                 return child;
             }
+            loadChild(text){
+                console.log('ahfh')
+            }
 
             createBoxElement() {
                 let newBoxContainer = parentboxclone.cloneNode(true); //mainbox clone
