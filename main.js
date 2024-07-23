@@ -280,6 +280,15 @@ document.addEventListener("DOMContentLoaded", function() {
         var canvas = document.getElementById("myCanvas");
         var ctx = canvas.getContext("2d");
 
+
+
+        let macookie = getCookie("Project Set"); //cookie for which project
+        if (!macookie) {
+            alert("Select set to work on");
+            window.location.href = "landingpage.html";
+        }
+        
+
         window.addEventListener("resize", function() {
             // Code to execute when the window is resized
             redrawAllLines(root);
@@ -349,21 +358,39 @@ document.addEventListener("DOMContentLoaded", function() {
 
         class Node {
             constructor(text) {
-                this.id = generateUniqueId();
+                
                 this.text = text;
                 this.children = [];
                 // this.childrenbox = mainbox.cloneNode(true);
                 // this.childrenbox.append()
+                // const dataRef = ref(db, 'users/' + user.uid + '/ideaprojects/' + macookie + '/head');
+                
+                // console.log(dataRef)
             }
 
             createChild(text) {
                 const child = new Node(text);
                 this.children.push(child);
                 child.parent = this;
-                child.createBoxElement()
+                child.id = generateUniqueId();
+                child.createBoxElement();
+        
+                const db = getDatabase();
+                console.log(child.parent.instanceDataRef)
+                const childPath = this.instanceDataRef + "/" + child.id;
+                console.log("Attempting to set child reference at path:", childPath);
 
-
-                
+                const childRef = ref(db, childPath);
+        
+                set(childRef, 'data')
+                    .then(() => {
+                        child.instanceDataRef = childRef;
+                        console.log("Child instance data reference set successfully.");
+                    })
+                    .catch((error) => {
+                        console.error("Error setting child instance data reference:", error);
+                    });
+        
                 return child;
             }
             loadChild(text){
@@ -431,7 +458,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 this.minimizebutton.addEventListener("click", () => {
                     // Code to be executed when the button is clicked
                     this.removeBoxElement()
-                    console.log('minimize box')
+                    // console.log('minimize box')
                 });
 
                 this.maximizebutton.addEventListener("click", () => {
@@ -475,7 +502,7 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             removeBoxElement() {
                 if (this.id != root.id){
-                    console.log(this.id, root.id)
+                    // console.log(this.id, root.id)
                     // console.log("sadhufioahsdfoiuashf")
                     this.parentbox.remove()
                     this.siblingcontainer.remove()
@@ -494,56 +521,90 @@ document.addEventListener("DOMContentLoaded", function() {
             return timestamp + sequencePart;
         }
 
-        const root = new Node("main");
-        // root.instance = mockbrowsersetup;
+
+
+        const projectname = 'header';
+        let pathToProject = ('users/' + user.uid + '/ideaprojects/' + macookie + "/" + projectname)
+        const projectRef = ref(db, pathToProject);
+        // let childDataRef = 0
+        const root = new Node();
+
+        get(projectRef)
+            .then((snapshot) => {
+                if (snapshot.exists()) {
+                    if (snapshot.hasChildren()) {
+                        // Assuming there is only one child, get the first child key
+                        const firstChildKey = snapshot.val()[Object.keys(snapshot.val())[0]];
+                        console.log(firstChildKey)
+                        const childRef = ref(db, pathToProject + "/" + firstChildKey);
+                        console.log("Project '" + projectname + "' has children. Setting root.dataRef to the first child.");
+                        root.instanceDataRef = (pathToProject + "/" + firstChildKey);
+                        // console.log(childDataRef)
+                    } else {
+                        console.log("Project '" + projectname + "' exists but has no children.");
+                        childDataRef = ref(db, pathToProject + "/temporary");
+                        set(childDataRef, 'data').then(() => {
+                            root.instanceDataRef = (pathToProject + '/temporary');
+                            console.log("Temporary child created and root.dataRef set to it.");
+                        });
+                    }
+                } else {
+                    // Project doesn't exist, proceed to set the value
+                    return set(projectRef, 1).then(() => {
+                        console.log("Project '" + projectname + "' created.");
+                        root.instanceDataRef = projectRef; //this is wrong but we will proceed (do i even come back to these issues?)
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error("Error checking project:", error);
+            });
+
+        
+        // root.instanceDataRef = childDataRef
         root.parentbox = mainbox;
-        root.siblingcontainer = mainsiblingcontainer
+        root.siblingcontainer = mainsiblingcontainer;
 
         // root.createChild('1')
         root.createBoxElement()
-
-        let indexingtags;
-        console.log('make sure you add the function that actually displays the quotes you idiot')
-
-        let macookie = getCookie("Project Set"); //cookie for which project
-        if (!macookie) {
-            alert("Select set to work on");
-            window.location.href = "landingpage.html";
-        }
-        console.log(macookie);
-        const forname = ref(db, 'users/' + user.uid + '/ideaprojects/' + macookie + '/name');
+        // console.log(this.instanceDataRef)
 
 
-        const dataRef = ref(db, 'users/' + user.uid + '/ideaprojects/' + macookie + '/quotes');
 
-        get(dataRef).then((snapshot) => {
-        // console.log(dataRef);
-        if (snapshot.exists()) {
+        
+        // const forname = ref(db, 'users/' + user.uid + '/ideaprojects/' + macookie + '/name');
 
-            let indexedQuotes = createquoteboxes(snapshot);
+
+        // const dataRef = ref(db, 'users/' + user.uid + '/ideaprojects/' + macookie + '/head');
+
+        // get(dataRef).then((snapshot) => {
+        // // console.log(dataRef);
+        // if (snapshot.exists()) {
+
+        //     let indexedQuotes = createquoteboxes(snapshot);
             
-            document.getElementById("quotetobedetermined").remove();
-            // console.log(indexedQuotes); // This will log the indexed quotes object
-        }
-        });
+        //     document.getElementById("quotetobedetermined").remove();
+        //     // console.log(indexedQuotes); // This will log the indexed quotes object
+        // }
+        // });
 
-        get(forname) //idk that this does anything rn??
-        .then((snapshot) => {
-        if (snapshot.exists()) {
-            // Node exists in the database
-            const nameValue = snapshot.val(); //gives the crzy identifier
-            console.log("Name:", nameValue);
+        // get(forname) //idk that this does anything rn??
+        // .then((snapshot) => {
+        // if (snapshot.exists()) {
+        //     // Node exists in the database
+        //     const nameValue = snapshot.val(); //gives the crzy identifier
+        //     console.log("Name:", nameValue);
 
-            let projitem = document.getElementById("myButton");
-            projitem.textContent = nameValue;
-        } else {
-            // Node doesn't exist in the database
-            console.log("Name node does not exist in the database.");
-        }
-        })
-        .catch((error) => {
-            console.error("Error getting name from the database:", error);
-        });
+        //     let projitem = document.getElementById("myButton");
+        //     projitem.textContent = nameValue;
+        // } else {
+        //     // Node doesn't exist in the database
+        //     console.log("Name node does not exist in the database.");
+        // }
+        // })
+        // .catch((error) => {
+        //     console.error("Error getting name from the database:", error);
+        // });
     
 
             }
