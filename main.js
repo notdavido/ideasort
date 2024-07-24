@@ -373,27 +373,61 @@ document.addEventListener("DOMContentLoaded", function() {
                 this.children.push(child);
                 child.parent = this;
                 child.id = generateUniqueId();
-                child.createBoxElement();
+                
         
                 const db = getDatabase();
                 console.log(child.parent.instanceDataRef)
 
                 
                 const childPath = this.instanceDataRef + "/" + child.id;
+                child.instanceDataRef = childPath
                 console.log("Attempting to set child reference at path:", childPath);
                 
                 const childRef = ref(db, childPath);
-        
+                child.instanceDataRef = childPath;
                 set(childRef, 'node')
                     .then(() => {
-                        child.instanceDataRef = childPath;
+                        
                         console.log("Child instance data reference set successfully.");
                     })
                     .catch((error) => {
                         console.error("Error setting child instance data reference:", error);
                     });
+
+                const dataTextPath = child.instanceDataRef + "/datatext";
+                const dataTextRef = ref(db, dataTextPath);
                 
+                set(dataTextRef, 'empty')
+                    .then(() => {
+                        console.log('Data text set successfully.');
+                    })
+                    .catch((error) => {
+                        console.error("Error setting data text:", error);
+                    });
                 
+                const dataTextAreaPath = child.instanceDataRef + "/datatextarea";
+                const dataTextAreaRef = ref(db, dataTextAreaPath);
+                
+                set(dataTextAreaRef, 'empty')
+                    .then(() => {
+                        console.log('Data text set successfully.');
+                    })
+                    .catch((error) => {
+                        console.error("Error setting data text:", error);
+                    });
+                // get(dataTextRef)
+                //     .then((snapshot) => {
+                //         if (snapshot.exists()) {
+                //             console.log('data text exists');
+                //         } else {
+                //             console.log('data text does not exist');
+                //         }
+                //     })
+                //     .catch((error) => {
+                //         console.error("Error checking data text:", error);
+                //     });
+                
+                child.createBoxElement();
                 return child;
             }
             loadChild(text){
@@ -432,13 +466,38 @@ document.addEventListener("DOMContentLoaded", function() {
                 sb.id = 'mainsiblings'
                 newBoxContainer.appendChild(sb);
                 this.siblingcontainer = sb
-                // if (parentTextElements) {
-                //     console.log(parentTextElements)
-                    
-                // } else {
-                //   console.log("Element not found");
-                // }
-                // this.createLineToParent()
+
+                const dataTextPath = this.instanceDataRef + "/datatext";
+                const dataTextRef = ref(db, dataTextPath);
+                get(dataTextRef) //setting main box text
+                    .then((snapshot) => {
+                        if (snapshot.exists()) {
+                            this.summarytext.textContent = snapshot.val();
+                        } else {
+                            console.log('No data available at the path.');
+                            this.summarytext.textContent = 'No data available';
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error getting data:", error);
+                        this.summarytext.textContent = 'Error fetching data';
+                    });
+
+                const dataTextAreaPath = this.instanceDataRef + "/datatextarea";
+                const dataTextAreaRef = ref(db, dataTextAreaPath);
+                get(dataTextAreaRef) //setting main box text
+                    .then((snapshot) => {
+                        if (snapshot.exists()) {
+                            this.textarea.textContent = snapshot.val();
+                        } else {
+                            console.log('No data available at the path.');
+                            this.textarea.textContent = 'No data available';
+                        }
+                    })
+                    .catch((error) => {
+                        console.error("Error getting data:", error);
+                        this.textarea.textContent = 'Error fetching data';
+                    });
                 redrawAllLines(root);
                 this.searchtext.addEventListener("keydown", (event) => {
                     // Check if Enter key is pressed
@@ -527,73 +586,103 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
         const projectname = 'header';
-        let pathToProject = ('users/' + user.uid + '/ideaprojects/' + macookie + "/" + projectname)
-        const projectRef = ref(db, pathToProject);
-        // let childDataRef = 0
-        const root = new Node();
+let pathToProject = ('users/' + user.uid + '/ideaprojects/' + macookie + "/" + projectname);
+const projectRef = ref(db, pathToProject);
+const root = new Node();
 
-        get(projectRef)
-            .then((snapshot) => {
-                if (snapshot.exists()) {
-                    if (snapshot.hasChildren()) {
-                        // Assuming there is only one child, get the first child key
-                        const firstChildKey = Object.keys(snapshot.val())[0];
-                        console.log(firstChildKey)
-                        const childRef = ref(db, `${pathToProject}/${firstChildKey}`);
-                        console.log("Project '" + projectname + "' has children. Setting root.dataRef to the first child.");
+function initializeRoot() {
+    root.parentbox = mainbox;
+    root.siblingcontainer = mainsiblingcontainer;
+    root.createBoxElement();
+}
 
-                        root.instanceDataRef = (pathToProject+ "/" + firstChildKey)
-                        return childRef;
-                    } else {
-                        let newID = generateUniqueId();
-                        console.log("Project '" + projectname + "' exists but has no children.");
-                        
-                        const newChildPath = pathToProject + "/" + newID;
-                        const newChildRef = ref(db, newChildPath);
-                        
-                        set(newChildRef, 'node').then(() => {
-                            root.id = newID;
-                            root.instanceDataRef = newChildPath;
-                            console.log("Temporary child created and root.dataRef set to it.");
-                        }).catch((error) => {
-                            console.error("Error setting new child:", error);
+get(projectRef)
+    .then((snapshot) => {
+        if (snapshot.exists()) {
+            if (snapshot.hasChildren()) {
+                const firstChildKey = Object.keys(snapshot.val())[0];
+                console.log(firstChildKey);
+                const childRef = ref(db, `${pathToProject}/${firstChildKey}`);
+                console.log("Project '" + projectname + "' has children. Setting root.dataRef to the first child.");
+                
+                root.instanceDataRef = `${pathToProject}/${firstChildKey}`;
+                console.log(root.instanceDataRef);
+                initializeRoot();
+            } else {
+                let newID = generateUniqueId();
+                console.log("Project '" + projectname + "' exists but has no children.");
+
+                const newChildPath = `${pathToProject}/${newID}`;
+                const newChildRef = ref(db, newChildPath);
+
+                set(newChildRef, 'node').then(() => {
+                    root.id = newID;
+                    root.instanceDataRef = newChildPath;
+                    console.log("Temporary child created and root.dataRef set to it.");
+                    initializeRoot();
+                }).catch((error) => {
+                    console.error("Error setting new child:", error);
+                });
+            }
+        } else {
+            let newID = generateUniqueId();
+            set(projectRef, 1).then(() => {
+                console.log("Project '" + projectname + "' created.");
+
+                const newChildPath = `${pathToProject}/${newID}`;
+                const newChildRef = ref(db, newChildPath);
+                root.instanceDataRef = newChildPath;
+                const dataTextPath = `${newChildPath}/datatext`;
+                console.log('Data text path:', dataTextPath);
+                const dataTextAreaPath = newChildPath + "/datatextarea";
+                const dataTextAreaRef = ref(db, dataTextAreaPath);
+                
+                
+
+                const dataTextRef = ref(db, dataTextPath);
+                console.log('Data text ref:', dataTextRef);
+
+                set(newChildRef, 'node').then(() => {
+                    root.id = newID;
+                    root.instanceDataRef = newChildPath;
+                    console.log("Temporary child created and root.dataRef set to it.");
+                    set(dataTextAreaRef, 'empty')
+                        .then(() => {
+                            console.log('Data text set successfully.');
+                        })
+                        .catch((error) => {
+                            console.error("Error setting data text:", error);
                         });
-                    }
-                } else {
-                    // Project doesn't exist, proceed to set the value
-                    let newID = generateUniqueId();
-                    return set(projectRef, 1).then(() => {
-                        console.log("Project '" + projectname + "' created.");
-                        
-                        const newChildPath = pathToProject + "/" + newID;
-                        const newChildRef = ref(db, newChildPath);
-                        
-                        return set(newChildRef, 'node').then(() => {
-                            root.id = newID;
-                            root.instanceDataRef = newChildPath;
-                            console.log("Temporary child created and root.dataRef set to it.");
-                        }).catch((error) => {
-                            console.error("Error setting new child:", error);
+                    set(dataTextRef, 'empty')
+                        .then(() => {
+                            console.log('Data text set successfully.');
+                            get(dataTextRef).then((snapshot) => {
+                                if (snapshot.exists()) {
+                                    console.log('Data in Firebase:', snapshot.val());
+                                } else {
+                                    console.log('No data found at the path.');
+                                }
+                                initializeRoot();
+                            }).catch((error) => {
+                                console.error("Error fetching data:", error);
+                                initializeRoot();
+                            });
+                        })
+                        .catch((error) => {
+                            console.error("Error setting data text:", error);
+                            initializeRoot();
                         });
-                    }).catch((error) => {
-                        console.error("Error creating project:", error);
-                    });
-                }
-            })
-            .catch((error) => {
-                console.error("Error checking project:", error);
+                }).catch((error) => {
+                    console.error("Error setting new child:", error);
+                });
+            }).catch((error) => {
+                console.error("Error creating project:", error);
             });
-
-        
-        // root.instanceDataRef = childDataRef
-        root.parentbox = mainbox;
-        root.siblingcontainer = mainsiblingcontainer;
-        
-
-        // root.createChild('1')
-        root.createBoxElement()
-        // console.log(this.instanceDataRef)
-
+        }
+    })
+    .catch((error) => {
+        console.error("Error checking project:", error);
+    });
 
 
         
