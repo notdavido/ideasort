@@ -356,6 +356,63 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         }
 
+        async function firebaseGet(path) {
+            try {
+                const dataRef = ref(db, path); // Correctly create a reference to the path
+                const snapshot = await get(dataRef);
+                
+                if (snapshot.exists()) {
+                    return snapshot.val();
+                } else {
+                    console.log('No data available at the path.');
+                }
+            } catch (error) {
+                console.error("Error getting data:", error);
+            }
+        }
+        async function firebaseSet(path, data) {
+            try {
+                const dataRef = ref(db, path); // Correctly create a reference to the path
+                await set(dataRef, data); // Set the data at the specified path
+                console.log('Data successfully written to the path.');
+            } catch (error) {
+                console.error("Error setting data:", error);
+            }
+        }
+        function createDivElement(location){
+            let sb = document.createElement("div");
+            sb.classList.add("flex", "flex-nowrap");
+            sb.id = 'mainsiblings'
+            location.appendChild(sb);
+            return sb
+        }
+        function setupEventListeners(thisfake) { //thisfake is just the passed 'this'
+            thisfake.searchtext.addEventListener("keydown", (event) => {
+                if (event.key === "Enter") {
+                    thisfake.summarytext.textContent = thisfake.searchtext.value;
+                    thisfake.searchtext.value = '';
+                }
+            });
+        
+            thisfake.addbutton.addEventListener("click", () => {
+                thisfake.createChild();
+            });
+        
+            thisfake.accordian.addEventListener("click", () => {
+                setTimeout(() => {
+                    redrawAllLines(root);
+                }, 150);
+            });
+        
+            thisfake.minimizebutton.addEventListener("click", () => {
+                thisfake.removeBoxElement();
+            });
+        
+            thisfake.maximizebutton.addEventListener("click", () => {
+                redrawBoxes(thisfake);
+                redrawAllLines(root);
+            });
+        }
         class Node {
             constructor(text) {
                 
@@ -374,59 +431,14 @@ document.addEventListener("DOMContentLoaded", function() {
                 child.parent = this;
                 child.id = generateUniqueId();
                 
-        
-                const db = getDatabase();
-                console.log(child.parent.instanceDataRef)
-
-                
-                const childPath = this.instanceDataRef + "/" + child.id;
-                child.instanceDataRef = childPath
-                console.log("Attempting to set child reference at path:", childPath);
-                
-                const childRef = ref(db, childPath);
-                child.instanceDataRef = childPath;
-                set(childRef, 'node')
-                    .then(() => {
-                        
-                        console.log("Child instance data reference set successfully.");
-                    })
-                    .catch((error) => {
-                        console.error("Error setting child instance data reference:", error);
-                    });
-
+                child.instanceDataRef = this.instanceDataRef + "/" + child.id;
                 const dataTextPath = child.instanceDataRef + "/datatext";
-                const dataTextRef = ref(db, dataTextPath);
-                
-                set(dataTextRef, 'empty')
-                    .then(() => {
-                        console.log('Data text set successfully.');
-                    })
-                    .catch((error) => {
-                        console.error("Error setting data text:", error);
-                    });
-                
                 const dataTextAreaPath = child.instanceDataRef + "/datatextarea";
-                const dataTextAreaRef = ref(db, dataTextAreaPath);
-                
-                set(dataTextAreaRef, 'empty')
-                    .then(() => {
-                        console.log('Data text set successfully.');
-                    })
-                    .catch((error) => {
-                        console.error("Error setting data text:", error);
-                    });
-                // get(dataTextRef)
-                //     .then((snapshot) => {
-                //         if (snapshot.exists()) {
-                //             console.log('data text exists');
-                //         } else {
-                //             console.log('data text does not exist');
-                //         }
-                //     })
-                //     .catch((error) => {
-                //         console.error("Error checking data text:", error);
-                //     });
-                
+-
+                firebaseSet(child.instanceDataRef, 'node'); 
+                firebaseSet(dataTextPath, 'empty');
+                firebaseSet(dataTextAreaPath, 'empty');
+
                 child.createBoxElement();
                 return child;
             }
@@ -439,17 +451,13 @@ document.addEventListener("DOMContentLoaded", function() {
                 let find = 0
                 if (this != root){
                     find = this.parent.siblingcontainer;
-                }
-                else{
+                  }
+                  else{
                     find = mainsiblingcontainer
-                }
-
-                
+                  }
                 find.append(newBoxContainer)
 
                 this.parentbox = newBoxContainer;
-
-
                 this.searchtext = this.parentbox.querySelector(".place-content-stretch");
                 this.summarytext = this.parentbox.querySelector(".collapse-title");
                 this.addbutton = this.parentbox.querySelector("#addanotherbox");
@@ -458,79 +466,30 @@ document.addEventListener("DOMContentLoaded", function() {
                 this.textarea = this.parentbox.querySelector(".textarea-bordered");
                 this.minimizebutton = this.mockup.querySelector("#minimize");
                 this.maximizebutton = this.mockup.querySelector("#maximize");
-                // this.searchtext.placeholder = this.parent.text;
-                // this.summarytext.textContent = this.text;
-
-                let sb = document.createElement("div");
-                sb.classList.add("flex", "flex-nowrap");
-                sb.id = 'mainsiblings'
-                newBoxContainer.appendChild(sb);
-                this.siblingcontainer = sb
+                this.siblingcontainer = createDivElement(newBoxContainer); 
 
                 const dataTextPath = this.instanceDataRef + "/datatext";
-                const dataTextRef = ref(db, dataTextPath);
-                get(dataTextRef) //setting main box text
-                    .then((snapshot) => {
-                        if (snapshot.exists()) {
-                            this.summarytext.textContent = snapshot.val();
-                        } else {
-                            console.log('No data available at the path.');
-                            this.summarytext.textContent = 'No data available';
-                        }
-                    })
-                    .catch((error) => {
-                        console.error("Error getting data:", error);
-                        this.summarytext.textContent = 'Error fetching data';
-                    });
-
                 const dataTextAreaPath = this.instanceDataRef + "/datatextarea";
-                const dataTextAreaRef = ref(db, dataTextAreaPath);
-                get(dataTextAreaRef) //setting main box text
-                    .then((snapshot) => {
-                        if (snapshot.exists()) {
-                            this.textarea.textContent = snapshot.val();
-                        } else {
-                            console.log('No data available at the path.');
-                            this.textarea.textContent = 'No data available';
-                        }
-                    })
-                    .catch((error) => {
-                        console.error("Error getting data:", error);
-                        this.textarea.textContent = 'Error fetching data';
-                    });
-                redrawAllLines(root);
-                this.searchtext.addEventListener("keydown", (event) => {
-                    // Check if Enter key is pressed
-                    if (event.key === "Enter") {
-                    this.summarytext.textContent = this.searchtext.value;
-                    this.searchtext.value = '';
-                    }
-                });
-                this.addbutton.addEventListener("click", () => {
-                    // Code to be executed when the button is clicked
-                    this.createChild()
-                });
-                
-                this.accordian.addEventListener("click", () => {
-                    setTimeout(() => {
-                    redrawAllLines(root);
-                    }, 150); // Wait 1 second (1000 milliseconds)
-                });
-                
-                this.minimizebutton.addEventListener("click", () => {
-                    // Code to be executed when the button is clicked
-                    this.removeBoxElement()
-                    // console.log('minimize box')
-                });
 
-                this.maximizebutton.addEventListener("click", () => {
-                    // Code to be executed when the button is clicked
-                    redrawBoxes(this);
-                    redrawAllLines(root);
-                });
+                const updateSummaryText = async (dataTextPath) => { //async function to get function elsewhere for not eyesore
+                    const datatext = await firebaseGet(dataTextPath);
+                    this.summarytext.textContent = datatext || 'No data available';
+                };
+                const updateTextArea = async (textpath) => {
+                    const datatext = await firebaseGet(textpath);
+                    this.textarea.textContent = datatext || 'No data available';
+                };
+
+                updateSummaryText(dataTextPath);
+                updateTextArea(dataTextAreaPath);
+
+                redrawAllLines(root);
+
+                setupEventListeners(this); //important for buttons
                 
                 return newBoxContainer;
             }
+            
             createLineToParent() {
                 if (this.parent == undefined) {
                     console.log('ended')
@@ -586,139 +545,104 @@ document.addEventListener("DOMContentLoaded", function() {
 
 
         const projectname = 'header';
-let pathToProject = ('users/' + user.uid + '/ideaprojects/' + macookie + "/" + projectname);
-const projectRef = ref(db, pathToProject);
-const root = new Node();
+    let pathToProject = ('users/' + user.uid + '/ideaprojects/' + macookie + "/" + projectname);
+    const projectRef = ref(db, pathToProject);
+    const root = new Node();
 
-function initializeRoot() {
-    root.parentbox = mainbox;
-    root.siblingcontainer = mainsiblingcontainer;
-    root.createBoxElement();
-}
+    function initializeRoot() {
+        root.parentbox = mainbox;
+        root.siblingcontainer = mainsiblingcontainer;
+        root.createBoxElement();
+    }
 
-get(projectRef)
-    .then((snapshot) => {
-        if (snapshot.exists()) {
-            if (snapshot.hasChildren()) {
-                const firstChildKey = Object.keys(snapshot.val())[0];
-                console.log(firstChildKey);
-                const childRef = ref(db, `${pathToProject}/${firstChildKey}`);
-                console.log("Project '" + projectname + "' has children. Setting root.dataRef to the first child.");
-                
-                root.instanceDataRef = `${pathToProject}/${firstChildKey}`;
-                console.log(root.instanceDataRef);
-                initializeRoot();
+    get(projectRef)
+        .then((snapshot) => {
+            if (snapshot.exists()) {
+                if (snapshot.hasChildren()) {
+                    const firstChildKey = Object.keys(snapshot.val())[0];
+                    console.log(firstChildKey);
+                    const childRef = ref(db, `${pathToProject}/${firstChildKey}`);
+                    console.log("Project '" + projectname + "' has children. Setting root.dataRef to the first child.");
+                    
+                    root.instanceDataRef = `${pathToProject}/${firstChildKey}`;
+                    console.log(root.instanceDataRef);
+                    initializeRoot();
+                } else {
+                    let newID = generateUniqueId();
+                    console.log("Project '" + projectname + "' exists but has no children.");
+
+                    const newChildPath = `${pathToProject}/${newID}`;
+                    const newChildRef = ref(db, newChildPath);
+
+                    set(newChildRef, 'node').then(() => {
+                        root.id = newID;
+                        root.instanceDataRef = newChildPath;
+                        console.log("Temporary child created and root.dataRef set to it.");
+                        initializeRoot();
+                    }).catch((error) => {
+                        console.error("Error setting new child:", error);
+                    });
+                }
             } else {
                 let newID = generateUniqueId();
-                console.log("Project '" + projectname + "' exists but has no children.");
+                set(projectRef, 1).then(() => {
+                    console.log("Project '" + projectname + "' created.");
 
-                const newChildPath = `${pathToProject}/${newID}`;
-                const newChildRef = ref(db, newChildPath);
-
-                set(newChildRef, 'node').then(() => {
-                    root.id = newID;
+                    const newChildPath = `${pathToProject}/${newID}`;
+                    const newChildRef = ref(db, newChildPath);
                     root.instanceDataRef = newChildPath;
-                    console.log("Temporary child created and root.dataRef set to it.");
-                    initializeRoot();
-                }).catch((error) => {
-                    console.error("Error setting new child:", error);
-                });
-            }
-        } else {
-            let newID = generateUniqueId();
-            set(projectRef, 1).then(() => {
-                console.log("Project '" + projectname + "' created.");
+                    const dataTextPath = `${newChildPath}/datatext`;
+                    console.log('Data text path:', dataTextPath);
+                    const dataTextAreaPath = newChildPath + "/datatextarea";
+                    const dataTextAreaRef = ref(db, dataTextAreaPath);
+                    
+                    
 
-                const newChildPath = `${pathToProject}/${newID}`;
-                const newChildRef = ref(db, newChildPath);
-                root.instanceDataRef = newChildPath;
-                const dataTextPath = `${newChildPath}/datatext`;
-                console.log('Data text path:', dataTextPath);
-                const dataTextAreaPath = newChildPath + "/datatextarea";
-                const dataTextAreaRef = ref(db, dataTextAreaPath);
-                
-                
+                    const dataTextRef = ref(db, dataTextPath);
+                    console.log('Data text ref:', dataTextRef);
 
-                const dataTextRef = ref(db, dataTextPath);
-                console.log('Data text ref:', dataTextRef);
-
-                set(newChildRef, 'node').then(() => {
-                    root.id = newID;
-                    root.instanceDataRef = newChildPath;
-                    console.log("Temporary child created and root.dataRef set to it.");
-                    set(dataTextAreaRef, 'empty')
-                        .then(() => {
-                            console.log('Data text set successfully.');
-                        })
-                        .catch((error) => {
-                            console.error("Error setting data text:", error);
-                        });
-                    set(dataTextRef, 'empty')
-                        .then(() => {
-                            console.log('Data text set successfully.');
-                            get(dataTextRef).then((snapshot) => {
-                                if (snapshot.exists()) {
-                                    console.log('Data in Firebase:', snapshot.val());
-                                } else {
-                                    console.log('No data found at the path.');
-                                }
-                                initializeRoot();
-                            }).catch((error) => {
-                                console.error("Error fetching data:", error);
+                    set(newChildRef, 'node').then(() => {
+                        root.id = newID;
+                        root.instanceDataRef = newChildPath;
+                        console.log("Temporary child created and root.dataRef set to it.");
+                        set(dataTextAreaRef, 'empty')
+                            .then(() => {
+                                console.log('Data text set successfully.');
+                            })
+                            .catch((error) => {
+                                console.error("Error setting data text:", error);
+                            });
+                        set(dataTextRef, 'empty')
+                            .then(() => {
+                                console.log('Data text set successfully.');
+                                get(dataTextRef).then((snapshot) => {
+                                    if (snapshot.exists()) {
+                                        console.log('Data in Firebase:', snapshot.val());
+                                    } else {
+                                        console.log('No data found at the path.');
+                                    }
+                                    initializeRoot();
+                                }).catch((error) => {
+                                    console.error("Error fetching data:", error);
+                                    initializeRoot();
+                                });
+                            })
+                            .catch((error) => {
+                                console.error("Error setting data text:", error);
                                 initializeRoot();
                             });
-                        })
-                        .catch((error) => {
-                            console.error("Error setting data text:", error);
-                            initializeRoot();
-                        });
+                    }).catch((error) => {
+                        console.error("Error setting new child:", error);
+                    });
                 }).catch((error) => {
-                    console.error("Error setting new child:", error);
+                    console.error("Error creating project:", error);
                 });
-            }).catch((error) => {
-                console.error("Error creating project:", error);
-            });
-        }
-    })
-    .catch((error) => {
-        console.error("Error checking project:", error);
-    });
+            }
+        })
+        .catch((error) => {
+            console.error("Error checking project:", error);
+        });
 
-
-        
-        // const forname = ref(db, 'users/' + user.uid + '/ideaprojects/' + macookie + '/name');
-
-
-        // const dataRef = ref(db, 'users/' + user.uid + '/ideaprojects/' + macookie + '/head');
-
-        // get(dataRef).then((snapshot) => {
-        // // console.log(dataRef);
-        // if (snapshot.exists()) {
-
-        //     let indexedQuotes = createquoteboxes(snapshot);
-            
-        //     document.getElementById("quotetobedetermined").remove();
-        //     // console.log(indexedQuotes); // This will log the indexed quotes object
-        // }
-        // });
-
-        // get(forname) //idk that this does anything rn??
-        // .then((snapshot) => {
-        // if (snapshot.exists()) {
-        //     // Node exists in the database
-        //     const nameValue = snapshot.val(); //gives the crzy identifier
-        //     console.log("Name:", nameValue);
-
-        //     let projitem = document.getElementById("myButton");
-        //     projitem.textContent = nameValue;
-        // } else {
-        //     // Node doesn't exist in the database
-        //     console.log("Name node does not exist in the database.");
-        // }
-        // })
-        // .catch((error) => {
-        //     console.error("Error getting name from the database:", error);
-        // });
     
 
             }
