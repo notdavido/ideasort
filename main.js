@@ -285,10 +285,20 @@ document.addEventListener("DOMContentLoaded", function() {
                 location.appendChild(sb);
                 return sb
             }
+            function debounce(func, wait) {
+                let timeout;
+                return function(...args) {
+                    const context = this;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(context, args), wait);
+                };
+            }
             function setupEventListeners(thisfake) { //thisfake is just the passed 'this'
                 thisfake.searchtext.addEventListener("keydown", (event) => {
                     if (event.key === "Enter") {
-                        thisfake.summarytext.textContent = thisfake.searchtext.value;
+                        let newtext = thisfake.searchtext.value;
+                        thisfake.summarytext.textContent = newtext;
+                        firebaseSet(thisfake.instanceDataRef + "/datatext", newtext)
                         thisfake.searchtext.value = '';
                     }
                 });
@@ -307,6 +317,12 @@ document.addEventListener("DOMContentLoaded", function() {
                     redrawBoxes(thisfake);
                     redrawAllLines(root);
                 });
+                const debouncedSave = debounce(() => {
+                    let newText = thisfake.textarea.value;
+                    firebaseSet(thisfake.instanceDataRef + "/datatextarea", newText);
+                }, 2000); // Adjust the debounce delay as needed
+            
+                thisfake.textarea.addEventListener("input", debouncedSave);
             }
             class Node {
                 constructor() {     
@@ -324,7 +340,7 @@ document.addEventListener("DOMContentLoaded", function() {
     -
                     firebaseSet(child.instanceDataRef, 'node'); 
                     firebaseSet(dataTextPath, 'empty');
-                    firebaseSet(dataTextAreaPath, 'empty');
+                    firebaseSet(dataTextAreaPath, '');
 
                     child.createBoxElement();
                     return child;
@@ -363,7 +379,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     };
                     const updateTextArea = async (textpath) => {
                         const datatext = await firebaseGet(textpath);
-                        this.textarea.textContent = datatext || 'No data available';
+                        this.textarea.textContent = datatext || '';
                     };
                     updateSummaryText(dataTextPath);
                     updateTextArea(dataTextAreaPath);
