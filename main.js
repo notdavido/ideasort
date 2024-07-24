@@ -18,8 +18,6 @@ const firebaseConfig = {
 
   //initialize
 const app = initializeApp(firebaseConfig);
-const firestore = getFirestore(app);
-const analytics = getAnalytics(app);
 const db = getDatabase();
 
 const auth = getAuth();
@@ -43,100 +41,57 @@ function validateemail(email) {
   }
   
 
-function register(event){
+async function register(event) {
     event.preventDefault();
-    const email = document.getElementById('email').value
-    const password = document.getElementById('emailpassword').value
-  
-    if (validateemail(email) == false || validatepassword(password) == false) {
-      return
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('emailpassword').value;
+
+    if (!validateemail(email) || !validatepassword(password)) {
+        return;
     }
-    createUserWithEmailAndPassword(auth,email,password)
-    
-    .then(function() {
-      
-      var user = auth.currentUser
-      // console.log("User:", user); // Check if user object is retrieved correctly
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        const userData = {
+            email: email,
+            last_login: Date.now()
+        };
+        await firebaseSet(`users/${user.uid}`, userData);
+        console.log("User added to database");
+        window.location.href = 'landingpage.html';
+    } catch (error) {
+        if (error.code === 'auth/email-already-in-use') {
+            alert("Account already exists");
+        } else {
+            console.error("Error registering user:", error);
+        }
+    }
+}
   
-      
-      // var database_ref = db.ref();
-      
-      console.log("here")
-      var user_data = {
-        email : email,
-        last_login : Date.now()
-      }
-  
-      set(ref(db, 'users/' + user.uid), user_data)
-        .then(() => {
-            console.log("User added to database");
-            window.location.href = 'landingpage.html';
-            // Optionally reset the form here
-        })
-        .catch((error) => {
-          var error_code = error.code
-          var error_message = error.message
-          //console.error("Error:", error_code, error_message)
-         
-          
-        });
-      // database_ref.child('users/' + user.uid).set()
-  
-    })
-    .catch((error) => {
-      var error_code = error.code
-      var error_message = error.message
-      console.log(error_code)
-      if (error_code === 'auth/email-already-in-use') {
-        // Handle email already in use error here
-        alert("account already exists")
-        // Display appropriate message to the user
-      }
-    });
-  }
-  
-  function login() {
+async function login(event) {
     event.preventDefault();
-    //get input fields
-  
-    
-  
-    const email = document.getElementById('email').value
-    const password = document.getElementById('emailpassword').value
-    //validate
-    if (validateemail(email) == false || validatepassword(password) == false) {
-      return
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('emailpassword').value;
+
+    if (!validateemail(email) || !validatepassword(password)) {
+        return;
     }
-  
-    console.log("here")
-      var user_data = {
-        last_login : Date.now()
-      }
-      signInWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
-      const user = userCredential.user;
-      console.log("User logged in:", user);
-      window.location.href = 'landingpage.html';
-      // Update user data
-      update(ref(db, 'users/' + user.uid), user_data)
-        .then(() => {
-          console.log("User data updated successfully");
-          // Optionally reset the form here
-        })
-        .catch((error) => {
-          console.error("Error updating user data:", error);
-        });
-    })
-    .catch((error) => {
-      // Handle sign-in errors
-      const errorCode = error.code;
-      const errorMessage = error.message;
-      console.error("Sign-in error:", errorCode, errorMessage);
-    });
-  }
-  
 
-
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        const userData = {
+            last_login: Date.now()
+        };
+        await update(ref(db, `users/${user.uid}`), userData);
+        console.log("User data updated successfully");
+        window.location.href = 'landingpage.html';
+    } catch (error) {
+        console.error("Sign-in error:", error);
+    }
+}
+  
 function setCookie(cookieName, cookieValue) {
     document.cookie = cookieName + "=" + cookieValue + ";path=/";
   }
@@ -156,8 +111,33 @@ function setCookie(cookieName, cookieValue) {
         }
     }
     return "";
-  }
+}
   
+
+async function firebaseGet(path) {
+    try {
+        const dataRef = ref(db, path); // Correctly create a reference to the path
+        const snapshot = await get(dataRef);
+        
+        if (snapshot.exists()) {
+            return snapshot.val();
+        } else {
+            console.log('No data available at the path.');
+        }
+    } catch (error) {
+        console.error("Error getting data:", error);
+    }
+}
+async function firebaseSet(path, data) {
+    try {
+        const dataRef = ref(db, path); // Correctly create a reference to the path
+        await set(dataRef, data); // Set the data at the specified path
+        console.log('Data successfully written to the path.');
+    } catch (error) {
+        console.error("Error setting data:", error);
+    }
+}
+
 document.addEventListener("DOMContentLoaded", function() {
   
     const signinpage = document.getElementById('signuppageredirect');
@@ -344,39 +324,12 @@ document.addEventListener("DOMContentLoaded", function() {
         function redrawAllChildNodesWithoutException (top){
             if (top.children) {
                 for (const child of top.children) {
-                    // console.log(child)
-
                         
-                        child.createBoxElement()
-                        child.createLineToParent()
-                        redrawAllChildNodesWithoutException(child)
-                
+                    child.createBoxElement()
+                    child.createLineToParent()
+                    redrawAllChildNodesWithoutException(child)
                 }
 
-            }
-        }
-
-        async function firebaseGet(path) {
-            try {
-                const dataRef = ref(db, path); // Correctly create a reference to the path
-                const snapshot = await get(dataRef);
-                
-                if (snapshot.exists()) {
-                    return snapshot.val();
-                } else {
-                    console.log('No data available at the path.');
-                }
-            } catch (error) {
-                console.error("Error getting data:", error);
-            }
-        }
-        async function firebaseSet(path, data) {
-            try {
-                const dataRef = ref(db, path); // Correctly create a reference to the path
-                await set(dataRef, data); // Set the data at the specified path
-                console.log('Data successfully written to the path.');
-            } catch (error) {
-                console.error("Error setting data:", error);
             }
         }
         function createDivElement(location){
