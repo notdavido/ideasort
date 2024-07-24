@@ -555,94 +555,73 @@ document.addEventListener("DOMContentLoaded", function() {
         root.createBoxElement();
     }
 
-    get(projectRef)
-        .then((snapshot) => {
+    async function checkAndInitializeProject(projectRef, pathToProject, projectname) {
+        try {
+            const snapshot = await get(projectRef);
+            
             if (snapshot.exists()) {
                 if (snapshot.hasChildren()) {
                     const firstChildKey = Object.keys(snapshot.val())[0];
                     console.log(firstChildKey);
                     const childRef = ref(db, `${pathToProject}/${firstChildKey}`);
-                    console.log("Project '" + projectname + "' has children. Setting root.dataRef to the first child.");
+                    console.log(`Project '${projectname}' has children. Setting root.dataRef to the first child.`);
                     
                     root.instanceDataRef = `${pathToProject}/${firstChildKey}`;
                     console.log(root.instanceDataRef);
                     initializeRoot();
                 } else {
-                    let newID = generateUniqueId();
-                    console.log("Project '" + projectname + "' exists but has no children.");
-
-                    const newChildPath = `${pathToProject}/${newID}`;
-                    const newChildRef = ref(db, newChildPath);
-
-                    set(newChildRef, 'node').then(() => {
-                        root.id = newID;
-                        root.instanceDataRef = newChildPath;
-                        console.log("Temporary child created and root.dataRef set to it.");
-                        initializeRoot();
-                    }).catch((error) => {
-                        console.error("Error setting new child:", error);
-                    });
+                    await createTemporaryChild(pathToProject, projectname);
                 }
             } else {
-                let newID = generateUniqueId();
-                set(projectRef, 1).then(() => {
-                    console.log("Project '" + projectname + "' created.");
-
-                    const newChildPath = `${pathToProject}/${newID}`;
-                    const newChildRef = ref(db, newChildPath);
-                    root.instanceDataRef = newChildPath;
-                    const dataTextPath = `${newChildPath}/datatext`;
-                    console.log('Data text path:', dataTextPath);
-                    const dataTextAreaPath = newChildPath + "/datatextarea";
-                    const dataTextAreaRef = ref(db, dataTextAreaPath);
-                    
-                    
-
-                    const dataTextRef = ref(db, dataTextPath);
-                    console.log('Data text ref:', dataTextRef);
-
-                    set(newChildRef, 'node').then(() => {
-                        root.id = newID;
-                        root.instanceDataRef = newChildPath;
-                        console.log("Temporary child created and root.dataRef set to it.");
-                        set(dataTextAreaRef, 'empty')
-                            .then(() => {
-                                console.log('Data text set successfully.');
-                            })
-                            .catch((error) => {
-                                console.error("Error setting data text:", error);
-                            });
-                        set(dataTextRef, 'empty')
-                            .then(() => {
-                                console.log('Data text set successfully.');
-                                get(dataTextRef).then((snapshot) => {
-                                    if (snapshot.exists()) {
-                                        console.log('Data in Firebase:', snapshot.val());
-                                    } else {
-                                        console.log('No data found at the path.');
-                                    }
-                                    initializeRoot();
-                                }).catch((error) => {
-                                    console.error("Error fetching data:", error);
-                                    initializeRoot();
-                                });
-                            })
-                            .catch((error) => {
-                                console.error("Error setting data text:", error);
-                                initializeRoot();
-                            });
-                    }).catch((error) => {
-                        console.error("Error setting new child:", error);
-                    });
-                }).catch((error) => {
-                    console.error("Error creating project:", error);
-                });
+                await createNewProject(projectRef, pathToProject, projectname);
             }
-        })
-        .catch((error) => {
+        } catch (error) {
             console.error("Error checking project:", error);
-        });
+        }
+    }
+    
+    async function createTemporaryChild(pathToProject, projectname) {
+        try {
+            let newID = generateUniqueId();
+            console.log(`Project '${projectname}' exists but has no children.`);
+            
+            const newChildPath = `${pathToProject}/${newID}`;
+            await firebaseSet(newChildPath, 'node');
+            
+            root.id = newID;
+            root.instanceDataRef = newChildPath;
+            console.log("Temporary child created and root.dataRef set to it.");
+            initializeRoot();
+        } catch (error) {
+            console.error("Error setting new child:", error);
+        }
+    }
+    
+    async function createNewProject(projectRef, pathToProject, projectname) {
+        try {
+            let newID = generateUniqueId();
+            await firebaseSet(projectRef, 1);
+            console.log(`Project '${projectname}' created.`);
+            
+            const newChildPath = `${pathToProject}/${newID}`;
+            root.instanceDataRef = newChildPath;
+            
+            await firebaseSet(newChildPath, 'node');
+            await firebaseSet(`${newChildPath}/datatext`, 'empty');
+            await firebaseSet(`${newChildPath}/datatextarea`, 'empty');
+            
+            root.id = newID;
+            console.log("Temporary child created and root.dataRef set to it.");
+            initializeRoot();
+        } catch (error) {
+            console.error("Error creating project:", error);
+        }
+    }
+    
+    checkAndInitializeProject(projectRef, pathToProject, projectname);
 
+
+        
     
 
             }
