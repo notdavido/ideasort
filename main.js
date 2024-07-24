@@ -328,8 +328,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 constructor() {     
                     this.children = [];
                 }
-                createChild(text) {
-                    const child = new Node(text);
+                createChild() {
+                    const child = new Node();
                     this.children.push(child);
                     child.parent = this;
                     child.id = generateUniqueId();
@@ -345,8 +345,34 @@ document.addEventListener("DOMContentLoaded", function() {
                     child.createBoxElement();
                     return child;
                 }
-                loadChild(text){
-                    console.log('ahfh')
+                async loadAllChildren() {
+                    try {
+                        const data = await firebaseGet(this.instanceDataRef);
+                        if (data) {
+                            for (const key in data) {
+                                if (key !== 'datatext' && key !== 'datatextarea') {
+                                    const child = new Node();
+                                    this.children.push(child);
+                                    child.parent = this;
+                                    child.id = key;
+                
+                                    child.instanceDataRef = this.instanceDataRef + "/" + child.id;
+                                    child.createBoxElement();
+                
+                                    // Check if the child has its own children and load them
+                                    const childData = await firebaseGet(child.instanceDataRef);
+                                    if (childData && Object.keys(childData).some(k => k !== 'datatext' && k !== 'datatextarea')) {
+                                        child.loadAllChildren();
+                                    }
+                                }
+                            }
+                            console.log('Children loaded successfully.');
+                        } else {
+                            console.log('No children found.');
+                        }
+                    } catch (error) {
+                        console.error('Error loading children:', error);
+                    }
                 }
                 createBoxElement() {
                     let newBoxContainer = parentboxclone.cloneNode(true); //mainbox clone
@@ -444,6 +470,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 root.parentbox = mainbox;
                 root.siblingcontainer = mainsiblingcontainer;
                 root.createBoxElement();
+                root.loadAllChildren();
             }
             async function checkAndInitializeProject(projectRef, pathToProject, projectname) {
                 try {
