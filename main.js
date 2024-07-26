@@ -1,6 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js';
 import { getDatabase, ref, set, update, get } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail  } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBfLy16MYJdhVDMBEsLI-OpvvzE_-Pp1WM",
@@ -625,6 +625,11 @@ document.addEventListener("DOMContentLoaded", function() {
             const loginelement = document.getElementById('onloginclick');
             loginelement.addEventListener('click', login);
         } 
+        if (document.getElementById('onresetclick')) {
+            // console.log("check")
+            const loginelement = document.getElementById('onresetclick');
+            loginelement.addEventListener('click', resetPass);
+        } 
 });
 
 
@@ -698,6 +703,17 @@ async function login(event) {
         warningBox(error)
         // console.error("Sign-in error:", error);
     }
+}
+
+function resetPass(event) {
+    const email = document.getElementById('email').value;
+    sendPasswordResetEmail(auth, email)
+  .then(() => {
+    warningBox("Password reset email has been sent")
+  })
+  .catch((error) => {
+    warningBox("There was an error, check information.")
+  });
 }
   
 function setCookie(cookieName, cookieValue) {
