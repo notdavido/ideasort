@@ -139,10 +139,6 @@ document.addEventListener("DOMContentLoaded", function() {
                     canvas.width = body.scrollWidth;
                     canvas.height = body.scrollHeight;
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    // if (root.maximizebutton) {
-                    //     root.removeMinimizedBoxElement()
-                    //     root.createMinimizedBoxElement()
-                    // }
                 } 
                 if (top.children) {
                     for (const child of top.children) {
@@ -337,7 +333,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     // Get the position and dimensions of the parent box
                     const parentBox = this.mockup;
                     if (!parentBox) {
-                        console.error('Parent box is not defined.');
+                        console.log('Parent box is not defined.');
                         return;
                     }
                 
