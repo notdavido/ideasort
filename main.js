@@ -18,127 +18,26 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase();
 const auth = getAuth();
 
-function validateemail(email) {
-    if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email))
-        {
-        return true
-        }
-        alert("You have entered an invalid email address!")
-        return false
-    }
 
-    function validatepassword(password) {
-        if (password < 6) {
-            return false
-          } else {
-            return true
-          }
-    }
-
-async function register(event) {
-    event.preventDefault();
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('emailpassword').value;
-
-    if (!validateemail(email) || !validatepassword(password)) {
-        return;
-    }
-
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        const userData = {
-            email: email,
-            last_login: Date.now()
-        };
-        await firebaseSet(`users/${user.uid}`, userData);
-        console.log("User added to database");
-        window.location.href = 'landingpage.html';
-    } catch (error) {
-        if (error.code === 'auth/email-already-in-use') {
-            alert("Account already exists");
-        } else {
-            console.error("Error registering user:", error);
-        }
-    }
-}
-  
-async function login(event) {
-    event.preventDefault();
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('emailpassword').value;
-
-    if (!validateemail(email) || !validatepassword(password)) {
-        return;
-    }
-
-    try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        const userData = {
-            last_login: Date.now()
-        };
-        await update(ref(db, `users/${user.uid}`), userData);
-        console.log("User data updated successfully");
-        window.location.href = 'landingpage.html';
-    } catch (error) {
-        console.error("Sign-in error:", error);
-    }
-}
-  
-function setCookie(cookieName, cookieValue) {
-    document.cookie = cookieName + "=" + cookieValue + ";path=/";
-  }
-  
-  //use Project Set for getting val
-  function getCookie(cookieName) { ////might need to reorder depending on what might happen
-    const name = cookieName + "=";
-    const decodedCookie = decodeURIComponent(document.cookie);
-    const cookieArray = decodedCookie.split(';');
-    for (let i = 0; i < cookieArray.length; i++) {
-        let cookie = cookieArray[i];
-        while (cookie.charAt(0) === ' ') {
-            cookie = cookie.substring(1);
-        }
-        if (cookie.indexOf(name) === 0) {
-            return cookie.substring(name.length, cookie.length);
-        }
-    }
-    return "";
-}
-  
-
-async function firebaseGet(path) {
-    try {
-        const dataRef = ref(db, path); // Correctly create a reference to the path
-        const snapshot = await get(dataRef);
-        
-        if (snapshot.exists()) {
-            return snapshot.val();
-        } else {
-            console.log('No data available at the path.');
-        }
-    } catch (error) {
-        console.error("Error getting data:", error);
-    }
-}
-async function firebaseSet(path, data) {
-    try {
-        const dataRef = ref(db, path); // Correctly create a reference to the path
-        await set(dataRef, data); // Set the data at the specified path
-        console.log('Data successfully written to the path.');
-    } catch (error) {
-        console.error("Error setting data:", error);
-    }
-}
 
 document.addEventListener("DOMContentLoaded", function() {
   
     const signinpage = document.getElementById('signuppageredirect');
     const loginpage = document.getElementById('loginpageredirect');
 
+    let mainbox = 0
+    let mainsiblingcontainer = 0
+    let parentboxclone =0
+    if (window.location.href.includes('index.html')) { //small initialization before the bulky stuff to remove annoying artifact- technically a bad solution
+        mainbox = document.getElementById("mainbox");
+        mainsiblingcontainer = document.getElementById("mainsiblings")
+        parentboxclone = mainbox.cloneNode(true);
+        document.getElementById("parentbox").remove(); //remove after to clone child part
+    }
+    
     auth.onAuthStateChanged(function(user) {
-      
+        
+        
         if (user) {
             if (window.location.href.includes('login.html') || window.location.href.includes('signup.html')) {
                 // If the current page is either 'login.html' or 'signup.html', reload the page
@@ -217,10 +116,10 @@ document.addEventListener("DOMContentLoaded", function() {
 
             }
             if (window.location.href.includes('index.html')) {
-            const mainbox = document.getElementById("mainbox");
-            const mainsiblingcontainer = document.getElementById("mainsiblings")
-            const parentboxclone = mainbox.cloneNode(true);
-            document.getElementById("parentbox").remove(); //remove after to clone child part
+            // const mainbox = document.getElementById("mainbox");
+            // const mainsiblingcontainer = document.getElementById("mainsiblings")
+            // const parentboxclone = mainbox.cloneNode(true);
+            // document.getElementById("parentbox").remove(); //remove after to clone child part
 
             var canvas = document.getElementById("myCanvas");
             var ctx = canvas.getContext("2d");
@@ -237,16 +136,30 @@ document.addEventListener("DOMContentLoaded", function() {
             function redrawAllLines(top){
                 if (top == root){
                     const body = document.body;
-                    canvas.width = body.scrollWidth-10;
-                    canvas.height = body.scrollHeight-10;
+                    canvas.width = body.scrollWidth;
+                    canvas.height = body.scrollHeight;
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    // if (root.maximizebutton) {
+                    //     root.removeMinimizedBoxElement()
+                    //     root.createMinimizedBoxElement()
+                    // }
                 } 
                 if (top.children) {
                     for (const child of top.children) {
-                        // console.log(child)
+                        if (child.isMinimized){
+                            child.parent.removeMinimizedBoxElement()
+                            child.parent.createMinimizedBoxElement()
+                            child.removeMinimizedBoxElement()
+                            continue
+                        }
                         if (child.parentbox != null){
+                            
                             redrawAllLines(child);
                             child.createLineToParent()
+                        }
+                        if (child.minimizedBoxElement){
+                            child.removeMinimizedBoxElement()
+                            child.createMinimizedBoxElement()
                         }
                     }
                 }
@@ -268,13 +181,51 @@ document.addEventListener("DOMContentLoaded", function() {
                     }
                 }
             }
+            // function redrawAllChildrenNodesUntilNextMinimized (top){
+            //     if (top.isMinimized == true){
+            //         return
+            //     }
+            //     if (top == root){
+            //         const body = document.body;
+            //         canvas.width = body.scrollWidth-10;
+            //         canvas.height = body.scrollHeight-10;
+            //         ctx.clearRect(0, 0, canvas.width, canvas.height);
+            //     }
+            //     if (top.children) {
+            //         for (const child of top.children) {
+            //             console.log(child.isMinimized)
+            //             if (child.isMinimized == true) {
+            //                 console.log('asdfsdfasdfoiadsjfoij')
+            //                 return
+            //             }
+            //             if (child.parentbox == null){
+            //                 child.createBoxElement()
+            //                 child.createLineToParent()
+            //                 redrawAllChildrenNodesUntilNextMinimized(child)
+            //             // }else{
+            //             //     child.createBoxElement()
+            //             //     redrawAllChildrenNodesUntilNextMinimized(child)
+            //             }
+            //         }
+            //     }
+            // }
             function redrawAllChildNodesWithoutException (top){
                 if (top.children) {
                     for (const child of top.children) {
-                            
+                        if (child.isMinimized == false)   {
                         child.createBoxElement()
                         child.createLineToParent()
                         redrawAllChildNodesWithoutException(child)
+                        } 
+                        
+                    }
+                }
+            }
+            function maximizeImmediateChildren(top){
+                if (top.children) {
+                    for (const child of top.children) {
+                        firebaseSet(child.instanceDataRef+"/dataminimized",false)
+                        child.isMinimized = false
                     }
                 }
             }
@@ -293,6 +244,8 @@ document.addEventListener("DOMContentLoaded", function() {
                     timeout = setTimeout(() => func.apply(context, args), wait);
                 };
             }
+            
+
             function setupEventListeners(thisfake) { //thisfake is just the passed 'this'
                 thisfake.searchtext.addEventListener("keydown", (event) => {
                     if (event.key === "Enter") {
@@ -312,8 +265,15 @@ document.addEventListener("DOMContentLoaded", function() {
                 });
                 thisfake.minimizebutton.addEventListener("click", () => {
                     thisfake.removeBoxElement();
+                    thisfake.removeMinimizedBoxElement()
+                    thisfake.parent.createMinimizedBoxElement();
+                    let dataMinimizedPath = thisfake.instanceDataRef + "/dataminimized";
+                    thisfake.isMinimized = true;
+                    firebaseSet(dataMinimizedPath, thisfake.isMinimized);
                 });
                 thisfake.maximizebutton.addEventListener("click", () => {
+                    thisfake.removeMinimizedBoxElement()
+                    maximizeImmediateChildren(thisfake)
                     redrawBoxes(thisfake);
                     redrawAllLines(root);
                 });
@@ -327,20 +287,24 @@ document.addEventListener("DOMContentLoaded", function() {
             class Node {
                 constructor() {     
                     this.children = [];
+                    // this.isMinimized = false
                 }
                 createChild() {
                     const child = new Node();
                     this.children.push(child);
                     child.parent = this;
                     child.id = generateUniqueId();
+                    child.isMinimized = false
                     
                     child.instanceDataRef = this.instanceDataRef + "/" + child.id;
                     const dataTextPath = child.instanceDataRef + "/datatext";
                     const dataTextAreaPath = child.instanceDataRef + "/datatextarea";
+                    const dataMinizedPath = child.instanceDataRef + "/dataminimized";
     -
                     firebaseSet(child.instanceDataRef, 'node'); 
                     firebaseSet(dataTextPath, 'empty');
                     firebaseSet(dataTextAreaPath, '');
+                    firebaseSet(dataMinizedPath, child.isMinimized); 
 
                     child.createBoxElement();
                     return child;
@@ -349,23 +313,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     try {
                         const data = await firebaseGet(this.instanceDataRef);
                         if (data) {
-                            for (const key in data) {
-                                if (key !== 'datatext' && key !== 'datatextarea') {
-                                    const child = new Node();
-                                    this.children.push(child);
-                                    child.parent = this;
-                                    child.id = key;
-                
-                                    child.instanceDataRef = this.instanceDataRef + "/" + child.id;
-                                    child.createBoxElement();
-                
-                                    // Check if the child has its own children and load them
-                                    const childData = await firebaseGet(child.instanceDataRef);
-                                    if (childData && Object.keys(childData).some(k => k !== 'datatext' && k !== 'datatextarea')) {
-                                        child.loadAllChildren();
-                                    }
-                                }
-                            }
+                            this.loadChildrenRecursively(data, this);
                             console.log('Children loaded successfully.');
                         } else {
                             console.log('No children found.');
@@ -374,6 +322,113 @@ document.addEventListener("DOMContentLoaded", function() {
                         console.error('Error loading children:', error);
                     }
                 }
+                createMinimizedBoxElement() {
+                    // Create a minimized box element
+                    if (this.minimizedBoxElement) {
+                        console.log('Minimized element already exists.');
+                        return;
+                    }
+                    this.minimizedBoxElement = document.createElement('div');
+                    this.minimizedBoxElement.className = 'mockup-browser bg-base-300 size-fit w-60 py-12 bg-primary';
+                    this.minimizedBoxElement.style.position = 'absolute';
+                    // this.minimizedBoxElement.style.backgroundColor = '#f0f0f0'; // Set background color
+                    this.minimizedBoxElement.style.zIndex = '-1'; // Set z-index to be behind other elements
+                
+                    // Get the position and dimensions of the parent box
+                    const parentBox = this.mockup;
+                    if (!parentBox) {
+                        console.error('Parent box is not defined.');
+                        return;
+                    }
+                
+                    // Position the minimized box below the parent box
+                    const parentLeft = parentBox.offsetLeft+8;
+                    const parentTop = parentBox.offsetTop -6; // Adjust position as needed
+                
+                    this.minimizedBoxElement.style.left = `${parentLeft}px`;
+                    this.minimizedBoxElement.style.top = `${parentTop}px`;
+                
+                    // Append the minimized box to the document body
+                    if( this.parentbox) {
+                        this.parentbox.appendChild(this.minimizedBoxElement);
+                    }
+                    
+                }
+                
+                removeMinimizedBoxElement(){
+                    if (this.minimizedBoxElement){
+                        this.minimizedBoxElement.remove()
+                        this.minimizedBoxElement = undefined
+                    }
+                }
+                removeBoxElement() {
+                    if (this.boxElement) {
+                        document.body.removeChild(this.boxElement);
+                        this.boxElement = null;
+                        this.removeMinimizedBoxElement(this)
+                    }
+                }
+                loadChildrenRecursivelyDrawNothing(data, parentNode) {
+                    console.log('i')
+                    for (const key in data) {
+                        if (key !== 'datatext' && key !== 'datatextarea' && key !== 'dataminimized') {
+                            const childData = data[key];
+                            
+                            // Skip this node and its children if minimized
+                            
+                
+                            const child = new Node();
+                            parentNode.children.push(child);
+                            child.parent = parentNode;
+                            child.id = key;
+                            child.instanceDataRef = parentNode.instanceDataRef + "/" + child.id;
+                            child.isMinimized = firebaseGet(child.instanceDataRef+"/dataminimized")
+
+                            // if (childData.dataminimized) {
+                            //     this.createMinimizedBoxElement(this)
+                            // }
+                            
+                            if (childData && Object.keys(childData).some(k => k !== 'datatext' && k !== 'datatextarea' && key !== 'dataminimized')) {
+                                this.loadChildrenRecursivelyDrawNothing(childData, child);
+                            }
+                        }
+                    }
+                }
+                
+                loadChildrenRecursively(data, parentNode) {
+                    for (const key in data) {
+                        if (key !== 'datatext' && key !== 'datatextarea' && key !== 'dataminimized') {
+                            const childData = data[key];
+                            
+                            // Skip this node and its children if minimized
+                            
+                
+                            const child = new Node();
+                            parentNode.children.push(child);
+                            child.parent = parentNode;
+                            child.id = key;
+                
+                            child.instanceDataRef = parentNode.instanceDataRef + "/" + child.id;
+                            if (childData.dataminimized) {
+                                if (childData && Object.keys(childData).some(k => k !== 'datatext' && k !== 'datatextarea' && key !== 'dataminimized')) {
+                                    child.parent.createMinimizedBoxElement()
+                                    this.loadChildrenRecursivelyDrawNothing(childData, child)
+                                    continue
+                                }
+                                
+                            }
+                            
+                            child.createBoxElement();
+                
+                            // Recursively load children
+                            if (childData && Object.keys(childData).some(k => k !== 'datatext' && k !== 'datatextarea' && key !== 'dataminimized')) {
+                                
+                                this.loadChildrenRecursively(childData, child);
+                            }
+                        }
+                    }
+                }
+                
                 createBoxElement() {
                     let newBoxContainer = parentboxclone.cloneNode(true); //mainbox clone
                     let find = 0
@@ -385,7 +440,15 @@ document.addEventListener("DOMContentLoaded", function() {
                     }
                     find.append(newBoxContainer)
 
+                    for (const child of this.children) {
+                        if (child.isMinimized) {
+                            this.createMinimizedBoxElement(this);
+                            // console.log("????????????//")
+                        }
+                    }
+                    this.isMinimized = false
                     this.parentbox = newBoxContainer;
+                    // console.log(newBoxContainer)
                     this.searchtext = this.parentbox.querySelector(".place-content-stretch");
                     this.summarytext = this.parentbox.querySelector(".collapse-title");
                     this.addbutton = this.parentbox.querySelector("#addanotherbox");
@@ -567,3 +630,118 @@ document.addEventListener("DOMContentLoaded", function() {
             loginelement.addEventListener('click', login);
         } 
 });
+
+
+function validateemail(email) {
+    if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email))
+        {
+        return true
+        }
+        alert("You have entered an invalid email address!")
+        return false
+    }
+
+    function validatepassword(password) {
+        if (password < 6) {
+            return false
+          } else {
+            return true
+          }
+    }
+
+async function register(event) {
+    event.preventDefault();
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('emailpassword').value;
+
+    if (!validateemail(email) || !validatepassword(password)) {
+        return;
+    }
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        const userData = {
+            email: email,
+            last_login: Date.now()
+        };
+        await firebaseSet(`users/${user.uid}`, userData);
+        console.log("User added to database");
+        window.location.href = 'landingpage.html';
+    } catch (error) {
+        if (error.code === 'auth/email-already-in-use') {
+            alert("Account already exists");
+        } else {
+            console.error("Error registering user:", error);
+        }
+    }
+}
+  
+async function login(event) {
+    event.preventDefault();
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('emailpassword').value;
+
+    if (!validateemail(email) || !validatepassword(password)) {
+        return;
+    }
+
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        const userData = {
+            last_login: Date.now()
+        };
+        await update(ref(db, `users/${user.uid}`), userData);
+        console.log("User data updated successfully");
+        window.location.href = 'landingpage.html';
+    } catch (error) {
+        console.error("Sign-in error:", error);
+    }
+}
+  
+function setCookie(cookieName, cookieValue) {
+    document.cookie = cookieName + "=" + cookieValue + ";path=/";
+  }
+  
+  //use Project Set for getting val
+  function getCookie(cookieName) { ////might need to reorder depending on what might happen
+    const name = cookieName + "=";
+    const decodedCookie = decodeURIComponent(document.cookie);
+    const cookieArray = decodedCookie.split(';');
+    for (let i = 0; i < cookieArray.length; i++) {
+        let cookie = cookieArray[i];
+        while (cookie.charAt(0) === ' ') {
+            cookie = cookie.substring(1);
+        }
+        if (cookie.indexOf(name) === 0) {
+            return cookie.substring(name.length, cookie.length);
+        }
+    }
+    return "";
+}
+  
+
+async function firebaseGet(path) {
+    try {
+        const dataRef = ref(db, path); // Correctly create a reference to the path
+        const snapshot = await get(dataRef);
+        
+        if (snapshot.exists()) {
+            return snapshot.val();
+        } else {
+            console.log('No data available at the path.');
+        }
+    } catch (error) {
+        console.error("Error getting data:", error);
+    }
+}
+async function firebaseSet(path, data) {
+    try {
+        const dataRef = ref(db, path); // Correctly create a reference to the path
+        await set(dataRef, data); // Set the data at the specified path
+        console.log('Data successfully written to the path.');
+    } catch (error) {
+        console.error("Error setting data:", error);
+    }
+}
