@@ -633,7 +633,8 @@ function validateemail(email) {
         {
         return true
         }
-        alert("You have entered an invalid email address!")
+        warningBox("You have entered an invalid email address!")
+        // alert("You have entered an invalid email address!")
         return false
     }
 
@@ -666,9 +667,11 @@ async function register(event) {
         window.location.href = 'landingpage.html';
     } catch (error) {
         if (error.code === 'auth/email-already-in-use') {
-            alert("Account already exists");
+            warningBox('Account already exists')
+            // alert("Account already exists");
         } else {
-            console.error("Error registering user:", error);
+            warningBox(error)
+            // console.error("Error registering user:", error);
         }
     }
 }
@@ -692,7 +695,8 @@ async function login(event) {
         console.log("User data updated successfully");
         window.location.href = 'landingpage.html';
     } catch (error) {
-        console.error("Sign-in error:", error);
+        warningBox(error)
+        // console.error("Sign-in error:", error);
     }
 }
   
@@ -715,6 +719,14 @@ function setCookie(cookieName, cookieValue) {
         }
     }
     return "";
+}
+
+function warningBox(text) {
+    let problemBox = document.getElementById('problemBox');
+    let textHold = document.getElementById('warningText');
+
+    textHold.textContent = text;
+    problemBox.classList.remove('hidden'); // Remove the 'hidden' class
 }
   
 
