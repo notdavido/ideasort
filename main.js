@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function() {
         mainbox = document.getElementById("mainbox");
         mainsiblingcontainer = document.getElementById("mainsiblings")
         parentboxclone = mainbox.cloneNode(true);
-        document.getElementById("parentbox").remove(); //remove after to clone child part
+        // document.getElementById("parentbox").remove(); //remove after to clone child part
     }
     
     auth.onAuthStateChanged(function(user) {
@@ -120,7 +120,7 @@ document.addEventListener("DOMContentLoaded", function() {
             // const mainsiblingcontainer = document.getElementById("mainsiblings")
             // const parentboxclone = mainbox.cloneNode(true);
             // document.getElementById("parentbox").remove(); //remove after to clone child part
-
+            document.getElementById("parentbox").remove();
             var canvas = document.getElementById("myCanvas");
             var ctx = canvas.getContext("2d");
 
