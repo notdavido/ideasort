@@ -246,9 +246,16 @@ document.addEventListener("DOMContentLoaded", function() {
                 thisfake.searchtext.addEventListener("keydown", (event) => {
                     if (event.key === "Enter") {
                         let newtext = thisfake.searchtext.value;
-                        thisfake.summarytext.textContent = newtext;
-                        firebaseSet(thisfake.instanceDataRef + "/datatext", newtext)
-                        thisfake.searchtext.value = '';
+                        if (newtext == ""){
+                            const userConfirmed = confirm("Are you sure you want to delete this node?");
+                            if (userConfirmed) {
+                                thisfake.deletedata()
+                            } 
+                        }else{
+                            thisfake.summarytext.textContent = newtext;
+                            firebaseSet(thisfake.instanceDataRef + "/datatext", newtext)
+                            thisfake.searchtext.value = '';
+                        }
                     }
                 });
                 thisfake.addbutton.addEventListener("click", () => {
@@ -304,6 +311,15 @@ document.addEventListener("DOMContentLoaded", function() {
 
                     child.createBoxElement();
                     return child;
+                }
+                deletedata() {
+                    const index = this.parent.children.indexOf(this);
+                    if (index > -1) {
+                        this.parent.children.splice(index, 1);
+                    }
+                    this.parentbox.remove()
+                    firebaseSet(this.instanceDataRef, null);
+                    redrawAllLines(root)
                 }
                 async loadAllChildren() {
                     try {
