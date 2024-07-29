@@ -242,50 +242,74 @@ document.addEventListener("DOMContentLoaded", function() {
             }
             
 
-            function setupEventListeners(thisfake) { //thisfake is just the passed 'this'
+            function setupEventListeners(thisfake) { 
+                // Auto-resize function
+                function autoResizeTextarea(element) {
+                    element.style.height = 'auto'; // Reset the height
+                    element.style.height = element.scrollHeight + 'px'; // Set the height to match the content
+                }
+            
+                // Existing event listeners
                 thisfake.searchtext.addEventListener("keydown", (event) => {
                     if (event.key === "Enter") {
                         let newtext = thisfake.searchtext.value;
                         if (newtext == ""){
                             const userConfirmed = confirm("Are you sure you want to delete this node?");
                             if (userConfirmed) {
-                                thisfake.deletedata()
+                                thisfake.deletedata();
                             } 
-                        }else{
+                        } else {
                             thisfake.summarytext.textContent = newtext;
-                            firebaseSet(thisfake.instanceDataRef + "/datatext", newtext)
+                            firebaseSet(thisfake.instanceDataRef + "/datatext", newtext);
                             thisfake.searchtext.value = '';
                         }
                     }
                 });
+            
                 thisfake.addbutton.addEventListener("click", () => {
                     thisfake.createChild();
                 });
+            
                 thisfake.accordian.addEventListener("click", () => {
                     setTimeout(() => {
                         redrawAllLines(root);
+                        autoResizeTextarea(thisfake.textarea); // Auto-resize textarea when accordion opens
+            
+                        // Check if the accordion is open or closed
+                        const accordionCheckbox = thisfake.accordianChecker
+                        const isOpen = accordionCheckbox.checked; 
+                        firebaseSet(thisfake.instanceDataRef + "/dataaccordian", isOpen); // Store the state
                     }, 150);
                 });
+            
                 thisfake.minimizebutton.addEventListener("click", () => {
                     thisfake.removeBoxElement();
-                    thisfake.removeMinimizedBoxElement()
+                    thisfake.removeMinimizedBoxElement();
                     thisfake.parent.createMinimizedBoxElement();
                     let dataMinimizedPath = thisfake.instanceDataRef + "/dataminimized";
                     thisfake.isMinimized = true;
                     firebaseSet(dataMinimizedPath, thisfake.isMinimized);
                 });
+            
                 thisfake.maximizebutton.addEventListener("click", () => {
-                    thisfake.removeMinimizedBoxElement()
-                    maximizeImmediateChildren(thisfake)
+                    thisfake.removeMinimizedBoxElement();
+                    maximizeImmediateChildren(thisfake);
                     redrawBoxes(thisfake);
                     redrawAllLines(root);
                 });
+            
                 const debouncedSave = debounce(() => {
                     let newText = thisfake.textarea.value;
                     firebaseSet(thisfake.instanceDataRef + "/datatextarea", newText);
                 }, 2000); // Adjust the debounce delay as needed
             
                 thisfake.textarea.addEventListener("input", debouncedSave);
+            
+                // Add auto-resize event listener
+                thisfake.textarea.addEventListener("input", () => autoResizeTextarea(thisfake.textarea));
+            
+                // Initial resize when the textarea is first seen
+                autoResizeTextarea(thisfake.textarea);
             }
             class Node {
                 constructor() {     
@@ -298,12 +322,15 @@ document.addEventListener("DOMContentLoaded", function() {
                     child.parent = this;
                     child.id = generateUniqueId();
                     child.isMinimized = false
+                    child.accordianOpened = false
                     
                     child.instanceDataRef = this.instanceDataRef + "/" + child.id;
                     const dataTextPath = child.instanceDataRef + "/datatext";
                     const dataTextAreaPath = child.instanceDataRef + "/datatextarea";
                     const dataMinizedPath = child.instanceDataRef + "/dataminimized";
-    -
+                    const dataAccordianPath = child.instanceDataRef + "/dataaccordian"
+                    
+    -               firebaseSet(child.instanceDataRef, false); 
                     firebaseSet(child.instanceDataRef, 'node'); 
                     firebaseSet(dataTextPath, 'empty');
                     firebaseSet(dataTextAreaPath, '');
@@ -383,7 +410,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 loadChildrenRecursivelyDrawNothing(data, parentNode) {
                     console.log('i')
                     for (const key in data) {
-                        if (key !== 'datatext' && key !== 'datatextarea' && key !== 'dataminimized') {
+                        if (key !== 'datatext' && key !== 'datatextarea' && key !== 'dataminimized'  && key !== 'dataaccordian') {
                             const childData = data[key];
                             
                             // Skip this node and its children if minimized
@@ -400,7 +427,7 @@ document.addEventListener("DOMContentLoaded", function() {
                             //     this.createMinimizedBoxElement(this)
                             // }
                             
-                            if (childData && Object.keys(childData).some(k => k !== 'datatext' && k !== 'datatextarea' && key !== 'dataminimized')) {
+                            if (childData && Object.keys(childData).some(k => k !== 'datatext' && k !== 'datatextarea' && key !== 'dataminimized'  && key !== 'dataaccordian')) {
                                 this.loadChildrenRecursivelyDrawNothing(childData, child);
                             }
                         }
@@ -409,7 +436,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 
                 loadChildrenRecursively(data, parentNode) {
                     for (const key in data) {
-                        if (key !== 'datatext' && key !== 'datatextarea' && key !== 'dataminimized') {
+                        if (key !== 'datatext' && key !== 'datatextarea' && key !== 'dataminimized' && key !== 'dataaccordian') {
                             const childData = data[key];
                             
                             // Skip this node and its children if minimized
@@ -422,7 +449,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 
                             child.instanceDataRef = parentNode.instanceDataRef + "/" + child.id;
                             if (childData.dataminimized) {
-                                if (childData && Object.keys(childData).some(k => k !== 'datatext' && k !== 'datatextarea' && key !== 'dataminimized')) {
+                                if (childData && Object.keys(childData).some(k => k !== 'datatext' && k !== 'datatextarea' && key !== 'dataminimized' && key !== 'dataaccordian')) {
                                     child.parent.createMinimizedBoxElement()
                                     this.loadChildrenRecursivelyDrawNothing(childData, child)
                                     continue
@@ -470,9 +497,11 @@ document.addEventListener("DOMContentLoaded", function() {
                     this.minimizebutton = this.mockup.querySelector("#minimize");
                     this.maximizebutton = this.mockup.querySelector("#maximize");
                     this.siblingcontainer = createDivElement(newBoxContainer); 
+                    this.accordianChecker = this.accordian.querySelector("#checkbox");
 
                     const dataTextPath = this.instanceDataRef + "/datatext";
                     const dataTextAreaPath = this.instanceDataRef + "/datatextarea";
+                    const accordianPath = this.instanceDataRef + "/dataaccordian"
 
                     const updateSummaryText = async (dataTextPath) => { //async function to get function elsewhere for not eyesore
                         const datatext = await firebaseGet(dataTextPath);
@@ -482,11 +511,27 @@ document.addEventListener("DOMContentLoaded", function() {
                         const datatext = await firebaseGet(textpath);
                         this.textarea.textContent = datatext || '';
                     };
+                    
+                    
                     updateSummaryText(dataTextPath);
                     updateTextArea(dataTextAreaPath);
 
                     redrawAllLines(root);
                     setupEventListeners(this); //important for buttons
+
+
+                    const accordianFix = async (textpath) => {
+                        const datatext = await firebaseGet(textpath);
+                        console.log(datatext)
+                        if (datatext == false) {
+                            this.accordianChecker.checked = false;
+                        }else if (datatext == true){
+                            this.accordianChecker.checked = true;
+                            this.textarea.style.height = 'auto'; // Reset the height
+                            this.textarea.style.height = this.textarea.scrollHeight + 'px'; // Set the height to match the content
+                        }
+                    };
+                    accordianFix(accordianPath);
                     return newBoxContainer;
                 }
                 createLineToParent() {
