@@ -18,3 +18,18 @@ html {
   overflow-y: scroll;
   overflow-x: scroll;
 }
+textarea {
+  overflow: hidden; /* Hide the scrollbar */
+  resize: none; /* Optional: Prevent manual resizing */
+}
+
+/* Hide scrollbar for Chrome, Safari, and Opera */
+textarea::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge, and Firefox */
+textarea {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
