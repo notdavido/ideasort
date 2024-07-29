@@ -532,9 +532,10 @@ document.addEventListener("DOMContentLoaded", function() {
                             this.textarea.style.height = this.textarea.scrollHeight + 'px'; // Set the height to match the content
                             setTimeout(function() {
                                 // Actions to perform after waiting
-                                redrawAllLines(root)
+                                
                             }, 230)
                         }
+                        redrawAllLines(root)
                     };
                     
                     accordianFix(accordianPath);
