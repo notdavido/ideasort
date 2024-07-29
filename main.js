@@ -33,6 +33,7 @@ document.addEventListener("DOMContentLoaded", function() {
         mainsiblingcontainer = document.getElementById("mainsiblings")
         parentboxclone = mainbox.cloneNode(true);
         // document.getElementById("parentbox").remove(); //remove after to clone child part
+        document.body.style.zoom = '0.7';
     }
     
     auth.onAuthStateChanged(function(user) {
@@ -136,8 +137,8 @@ document.addEventListener("DOMContentLoaded", function() {
             function redrawAllLines(top){
                 if (top == root){
                     const body = document.body;
-                    canvas.width = body.scrollWidth;
-                    canvas.height = body.scrollHeight;
+                    canvas.width = body.scrollWidth*1/.7;
+                    canvas.height = body.scrollHeight*1/.7;
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                 } 
                 if (top.children) {
@@ -516,7 +517,7 @@ document.addEventListener("DOMContentLoaded", function() {
                     updateSummaryText(dataTextPath);
                     updateTextArea(dataTextAreaPath);
 
-                    redrawAllLines(root);
+                    
                     setupEventListeners(this); //important for buttons
 
 
@@ -529,9 +530,15 @@ document.addEventListener("DOMContentLoaded", function() {
                             this.accordianChecker.checked = true;
                             this.textarea.style.height = 'auto'; // Reset the height
                             this.textarea.style.height = this.textarea.scrollHeight + 'px'; // Set the height to match the content
+                            setTimeout(function() {
+                                // Actions to perform after waiting
+                                redrawAllLines(root)
+                            }, 230)
                         }
                     };
+                    
                     accordianFix(accordianPath);
+                    // redrawAllLines(root);
                     return newBoxContainer;
                 }
                 createLineToParent() {
